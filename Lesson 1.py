@@ -6,7 +6,7 @@ def fact(n):
         n -= 1
     return factorial
 def Geron(eps_u, a):
-    n_k = 1 + (a-1)/2 +((a-1)**2)/8
+    n_k = 1 + (a-1)/2 - ((a-1)**2)/8
     while abs(a - n_k*n_k) > eps_u:
        n_k = 0.5*(n_k + a/n_k)
     return abs(n_k)
