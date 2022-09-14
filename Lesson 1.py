@@ -6,7 +6,7 @@ def fact(n):
         n -= 1
     return factorial
 def Geron(eps_u, a):
-    n_k = 1 + (a - 1)/2 - ((a-1)**2)/8
+    n_k = 1 + (a-1)/2 +((a-1)**2)/8
     while abs(a - n_k*n_k) > eps_u:
        n_k = 0.5*(n_k + a/n_k)
     return abs(n_k)
@@ -16,17 +16,15 @@ def ch_Teylor(i, eps_w):
     n = 0
     Sum = 0
     while abs((i**(2*n))/fact(2*n)) > eps_w:
+        Sum += (i ** (2 * n)) / fact(2 * n)
         n += 1
-    for j in range(0,n+1):
-       Sum += (i**(2*j))/fact(2*j)
     return Sum
 def sin_Teylor(i, eps_y):
     n = 0
     Sum = 0
     while abs(((-1)**n)*(i ** (2 * n + 1)) / fact(2 * n + 1)) > eps_y:
+        Sum += ((-1) ** n) * (i ** (2 * n + 1)) / fact(2 * n + 1)
         n += 1
-    for j in range(0, n + 1):
-        Sum += ((-1)**j)*(i ** (2 * j + 1)) / fact(2 * j + 1)
     return Sum
 s = []
 eps = 10**(-6)
@@ -35,7 +33,6 @@ c_u = 0.4
 eps_u = eps/3*c_u
 arr_V = []
 c_v = 0.68
-eps_v = eps/3*c_v
 arr_W = []
 c_w = 0.79
 eps_w = eps/3*c_w
