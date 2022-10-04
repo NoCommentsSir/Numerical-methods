@@ -66,9 +66,14 @@ class Vector:
         for i in range(a._length):
             sum = 0
             for j in range(a._length):
-                sum += a.matrix[i][k] * b.vector[k]
+                sum += a.matrix[i][j] * b.vector[j]
             M.append(sum)
         self.vector = M
+
+    def swap_vec_lem(self, a, b):
+        temp = self.vector[a]
+        self.vector[a] = self.vector[b]
+        self.vector[b] = temp
 
 class Help_Vector(Vector):
     def __init__(self, length):
@@ -82,7 +87,12 @@ B = Vector(n)
 print("Введите вектор. Для проверки работы программы (4 23 5)")
 B.get_vector()
 Y = Help_Vector(n)
+Y_m = Help_Matrix(n)
+Y_m.matrix = [[0 for _ in range(n)] for _ in range(n)]
 X = Help_Vector(n)
+X_m = Help_Matrix(n)
+I = Help_Matrix(n)
+X_m.matrix = [[0 for _ in range(n)] for _ in range(n)]
 U = Help_Matrix(n)
 L = Help_Matrix(n)
 Q = Help_Matrix(n)
@@ -105,13 +115,13 @@ for i in range(n):
         if A.matrix[i][j] == maxx:
             A.swap_row(0,i)
             P.swap_row(0,i)
+            B.swap_vec_lem(0,i)
 
 for j in range(n):
     if A.matrix[0][j] == maxx:
         for i in range(n):
             A.swap_elem(i,0,i,j)
             Q.swap_elem(i, 0, i, j)
-
 for i in range(n):
     for j in range(n):
         if i <= j:
@@ -137,6 +147,20 @@ for i in reversed(range(n)):
         sum += X.vector[j]*U.matrix[i][j]
     X.vector[i] = (Y.vector[i] - sum)/U.matrix[i][i]
 
+for i in range(n):
+    for j in range(n):
+        sum = 0
+        for k in range(n):
+            sum += L.matrix[i][k] * Y_m.matrix[k][j]
+        Y_m.matrix[i][j] = I.matrix[i][j] - sum
+
+for i in reversed(range(n)):
+    for j in range(n):
+        sum = 0
+        for k in range(n):
+            sum += U.matrix[i][k] * X_m.matrix[k][j]
+        X_m.matrix[i][j] = (Y_m.matrix[i][j] - sum)/U.matrix[i][i]
+
 A.det(L.matrix,U.matrix)
 print(f'Det A = {A.deter}')
 print("L matrix: ")
@@ -160,3 +184,9 @@ print()
 Rezult = Help_Vector(n)
 Rezult.multi_mat_vec(A, X)
 Rezult.display()
+X_m.det()
+X_m.display()
+print()
+Rez_2 = Help_Matrix(n)
+print()
+Rez_2.multi(A, X_m)
