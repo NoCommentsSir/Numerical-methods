@@ -1,3 +1,4 @@
+from math import *
 n = int(input())
 class Matrix:
 
@@ -12,6 +13,24 @@ class Matrix:
         for i in range(len(a)):
             det = det * a[i][i] * b[i][i]
         self.deter = det
+
+    def LU_matrix(self, a, b):
+        for i in range(n):
+            for j in range(n):
+                if i <= j:
+                    sum = 0
+                    for k in range(i):
+                        sum = sum + a.matrix[i][k] * b.matrix[k][j]
+                    b.matrix[i][j] = A.matrix[i][j] - sum
+                elif i > j:
+                    sum = 0
+                    for k in range(j):
+                        sum = sum + a.matrix[i][k] * b.matrix[k][j]
+                    a.matrix[i][j] = (A.matrix[i][j] - sum) / b.matrix[j][j]
+        self.L = Help_Matrix(a._length)
+        self.L.matrix = a.matrix
+        self.U = Help_Matrix(b._length)
+        self.U.matrix = b.matrix
 
     def multi(self, a, b):
         M = []
@@ -40,6 +59,14 @@ class Matrix:
             for j in range(self._length):
                 print(self.matrix[i][j], end=' ')
             print()
+
+    def norma(self):
+        sum = 0
+        for i in range(self._length):
+            for j in range(self._length):
+                sum += self.matrix[i][j]**2
+        self.norm = sqrt(sum)
+
 
 class Help_Matrix(Matrix):
     def __init__(self, length):
@@ -122,71 +149,68 @@ for j in range(n):
         for i in range(n):
             A.swap_elem(i,0,i,j)
             Q.swap_elem(i, 0, i, j)
-for i in range(n):
-    for j in range(n):
-        if i <= j:
-            sum = 0
-            for k in range(i):
-                sum = sum + L.matrix[i][k]*U.matrix[k][j]
-            U.matrix[i][j] = A.matrix[i][j] - sum
-        elif i > j:
-            sum = 0
-            for k in range(j):
-                sum = sum + L.matrix[i][k] * U.matrix[k][j]
-            L.matrix[i][j] = (A.matrix[i][j] - sum)/U.matrix[j][j]
+A.LU_matrix(L, U)
 
 for i in range(n):
     sum = 0
     for j in range(n):
-        sum += Y.vector[j]*L.matrix[i][j]
+        sum += Y.vector[j]*A.L.matrix[i][j]
     Y.vector[i] = B.vector[i] - sum
 
 for i in reversed(range(n)):
     sum = 0
     for j in range(n):
-        sum += X.vector[j]*U.matrix[i][j]
-    X.vector[i] = (Y.vector[i] - sum)/U.matrix[i][i]
+        sum += X.vector[j]*A.U.matrix[i][j]
+    X.vector[i] = (Y.vector[i] - sum)/A.U.matrix[i][i]
 
 for i in range(n):
     for j in range(n):
         sum = 0
         for k in range(n):
-            sum += L.matrix[i][k] * Y_m.matrix[k][j]
+            sum += A.L.matrix[i][k] * Y_m.matrix[k][j]
         Y_m.matrix[i][j] = I.matrix[i][j] - sum
 
 for i in reversed(range(n)):
     for j in range(n):
         sum = 0
         for k in range(n):
-            sum += U.matrix[i][k] * X_m.matrix[k][j]
-        X_m.matrix[i][j] = (Y_m.matrix[i][j] - sum)/U.matrix[i][i]
-
-A.det(L.matrix,U.matrix)
-print(f'Det A = {A.deter}')
-print("L matrix: ")
-L.display()
-print("U matrix: ")
-U.display()
+            sum += A.U.matrix[i][k] * X_m.matrix[k][j]
+        X_m.matrix[i][j] = (Y_m.matrix[i][j] - sum)/A.U.matrix[i][i]
+A.det(A.L.matrix,A.U.matrix)
+A.norma()
+print("Ответы к пунктам:")
+print(f'a) Det A = {A.deter}')
+print('б)')
+X.display()
+print()
+print("в)")
+X_m.display()
+print("г)")
+X_m.norma()
+print(f'Число обусловленности = {X_m.norm*A.norm}')
+print('\n')
+print('=================================')
+print('Проверки по пунктам:')
+print('а)')
 print("Multiplication L and U:")
 M_1 = Matrix(n)
-M_1.multi(L,U)
+M_1.multi(A.L,A.U)
+M_1.display()
 M_2 = Matrix(n)
 M_2.multi(P,Buf)
 M_2.multi(M_2, Q)
-M_1.display()
 print("Multiplication PA and Q:")
 M_2.display()
-print('\n')
-Y.display()
-print()
-X.display()
-print()
+print('б)')
 Rezult = Help_Vector(n)
 Rezult.multi_mat_vec(A, X)
 Rezult.display()
-X_m.det()
-X_m.display()
 print()
-Rez_2 = Help_Matrix(n)
-print()
+print('в)')
+Rez_2 = Matrix(n)
 Rez_2.multi(A, X_m)
+Rez_3 = Matrix(n)
+Rez_3.multi(X_m, A)
+Rez_2.display()
+print()
+Rez_3.display()
