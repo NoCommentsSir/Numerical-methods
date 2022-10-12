@@ -31,16 +31,17 @@ class Matrix:
             B.swap_vec_lem(k, max_row)
             Q.swap_col(max_col, k)
             a.swap_col(max_col, k)
-            for i in range(k+1, n):
-                a.matrix[i][k] = a.matrix[i][k]/a.matrix[k][k]
-                for j in range(k+1, n):
-                    a.matrix[i][j] = a.matrix[i][j] - a.matrix[k][j]*a.matrix[i][k]
-            for i in range(k, n):
-                for j in range(k, n):
-                    if i > j:
-                        L.matrix[i][j] = a.matrix[i][j]
-                        a.matrix[i][j] = 0
-        U.matrix = a.matrix
+            for i in range(n):
+                if k <= i:
+                    sum = 0
+                    for j in range(i):
+                        sum = sum + L.matrix[k][j] * U.matrix[j][i]
+                    U.matrix[k][i] = a.matrix[k][i] - sum
+                elif k > i:
+                    sum = 0
+                    for j in range(i):
+                        sum = sum + L.matrix[k][j] * U.matrix[j][i]
+                    L.matrix[k][i] = (a.matrix[k][i] - sum) / U.matrix[i][i]
         L.display()
         U.display()
 
