@@ -5,6 +5,7 @@ class Matrix:
     def __init__(self, length):
         self._length = length
 
+
     def get_matrix(self):
         self.matrix = [[int(input()) for _ in range(self._length)] for _ in range(self._length)]
 
@@ -14,23 +15,36 @@ class Matrix:
             det = det * a[i][i] * b[i][i]
         self.deter = det
 
-    def LU_matrix(self, a, b):
-        for i in range(n):
-            for j in range(n):
-                if i <= j:
-                    sum = 0
-                    for k in range(i):
-                        sum = sum + a.matrix[i][k] * b.matrix[k][j]
-                    b.matrix[i][j] = A.matrix[i][j] - sum
-                elif i > j:
-                    sum = 0
-                    for k in range(j):
-                        sum = sum + a.matrix[i][k] * b.matrix[k][j]
-                    a.matrix[i][j] = (A.matrix[i][j] - sum) / b.matrix[j][j]
-        self.L = Help_Matrix(a._length)
-        self.L.matrix = a.matrix
-        self.U = Help_Matrix(b._length)
-        self.U.matrix = b.matrix
+    def LU_matrix(self, a, U, L, P, Q, B):
+        for k in range(n):
+            maxx = 10 ** (-10)
+            max_row = 0
+            max_col = 0
+            for i in range(k,n):
+                for j in range(k,n):
+                    if a.matrix[i][j] > maxx:
+                        maxx = a.matrix[i][j]
+                        max_row = i;
+                        max_col = j;
+            P.swap_row(max_row, k)
+            a.swap_row(max_row, k)
+            B.swap_vec_lem(k, max_row)
+            Q.swap_col(max_col, k)
+            a.swap_col(max_col, k)
+            for i in range(k+1, n):
+                a.matrix[i][k] = a.matrix[i][k]/a.matrix[k][k]
+                for j in range(k+1, n):
+                    a.matrix[i][j] = a.matrix[i][j] - a.matrix[k][j]*a.matrix[i][k]
+            for i in range(k, n):
+                for j in range(k, n):
+                    if i > j:
+                        L.matrix[i][j] = a.matrix[i][j]
+                        a.matrix[i][j] = 0
+        U.matrix = a.matrix
+        L.display()
+        U.display()
+
+
 
     def multi(self, a, b):
         M = []
@@ -49,10 +63,11 @@ class Matrix:
         self.matrix[a] = self.matrix[b]
         self.matrix[b] = temp
 
-    def swap_elem(self, a_1, a_2, b_1, b_2):
-        temp = self.matrix[a_1][a_2]
-        self.matrix[a_1][a_2] = self.matrix[b_1][b_2]
-        self.matrix[b_1][b_2] = temp
+    def swap_col(self, a, b):
+        for i in range(self._length):
+            temp = self.matrix[i][a]
+            self.matrix[i][a] = self.matrix[i][b]
+            self.matrix[i][b] = temp
 
     def display(self):
         for i in range(self._length):
@@ -124,7 +139,6 @@ U = Help_Matrix(n)
 L = Help_Matrix(n)
 Q = Help_Matrix(n)
 P = Help_Matrix(n)
-maxx = 10**(-10)
 
 Buf = Matrix(n)
 buf = [[None for _ in range(n)] for _ in range(n)]
@@ -132,51 +146,33 @@ for i in range(n):
     for j in range(n):
         buf[i][j] = A.matrix[i][j]
 Buf.matrix = buf
-for i in range(n):
-    for j in range(n):
-        if A.matrix[i][j] > maxx:
-            maxx = A.matrix[i][j]
-
-for i in range(n):
-    for j in range(n):
-        if A.matrix[i][j] == maxx:
-            A.swap_row(0,i)
-            P.swap_row(0,i)
-            B.swap_vec_lem(0,i)
-
-for j in range(n):
-    if A.matrix[0][j] == maxx:
-        for i in range(n):
-            A.swap_elem(i,0,i,j)
-            Q.swap_elem(i, 0, i, j)
-A.LU_matrix(L, U)
-
+Buf.LU_matrix(A, U, L, P, Q, B)
 for i in range(n):
     sum = 0
     for j in range(n):
-        sum += Y.vector[j]*A.L.matrix[i][j]
+        sum += Y.vector[j]*L.matrix[i][j]
     Y.vector[i] = B.vector[i] - sum
 
 for i in reversed(range(n)):
     sum = 0
     for j in range(n):
-        sum += X.vector[j]*A.U.matrix[i][j]
-    X.vector[i] = (Y.vector[i] - sum)/A.U.matrix[i][i]
+        sum += X.vector[j]*U.matrix[i][j]
+    X.vector[i] = (Y.vector[i] - sum)/U.matrix[i][i]
 
 for i in range(n):
     for j in range(n):
         sum = 0
         for k in range(n):
-            sum += A.L.matrix[i][k] * Y_m.matrix[k][j]
+            sum += L.matrix[i][k] * Y_m.matrix[k][j]
         Y_m.matrix[i][j] = I.matrix[i][j] - sum
 
 for i in reversed(range(n)):
     for j in range(n):
         sum = 0
         for k in range(n):
-            sum += A.U.matrix[i][k] * X_m.matrix[k][j]
-        X_m.matrix[i][j] = (Y_m.matrix[i][j] - sum)/A.U.matrix[i][i]
-A.det(A.L.matrix,A.U.matrix)
+            sum += U.matrix[i][k] * X_m.matrix[k][j]
+        X_m.matrix[i][j] = (Y_m.matrix[i][j] - sum)/U.matrix[i][i]
+A.det(L.matrix,U.matrix)
 A.norma()
 print("Ответы к пунктам:")
 print(f'a) Det A = {A.deter}')
@@ -194,7 +190,7 @@ print('Проверки по пунктам:')
 print('а)')
 print("Multiplication L and U:")
 M_1 = Matrix(n)
-M_1.multi(A.L,A.U)
+M_1.multi(L,U)
 M_1.display()
 M_2 = Matrix(n)
 M_2.multi(P,Buf)
