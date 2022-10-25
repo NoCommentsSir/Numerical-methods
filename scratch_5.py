@@ -29,7 +29,7 @@ class Matrix:
             for i in range(k,self._length):
                 for j in range(k,self._length):
                     if abs(self.matrix[i][j]) > maxx:
-                        maxx = self.matrix[i][j]
+                        maxx = abs(self.matrix[i][j])
                         max_row = i;
                         max_col = j;
             if(max_col != 0 or max_row != 0):
@@ -39,7 +39,7 @@ class Matrix:
                 self.swap_col(max_col, k)
             else:
                 continue
-            if abs(self.matrix[k][k]) > eps :
+            if abs(self.matrix[k][k]) - eps > 0:
                 for i in range(k+1, self._length):
                     self.matrix[i][k] = self.matrix[i][k]/self.matrix[k][k]
                     for j in range(k+1, self._length):
@@ -108,10 +108,7 @@ class Matrix:
                 elif i == Buff._length - 1:
                     buff[i][j] = 0
         Buff.matrix = buff
-        Buff.display()
         Buff.LU_matrix(U,L,P,Q)
-        print(Buff.rang)
-        U.display()
         return Buff.rang
 
 
@@ -178,14 +175,12 @@ for i in range(A._length):
         buf[i][j] = A.matrix[i][j]
 Buf.matrix = buf
 Buf.LU_matrix(U, L, P, Q)
+A.rang = Buf.rang
 A.display()
 print("Ранг матрицы")
-print(Buf.rang)
-U.display()
-A.kron_kap(B)
+print(A.rang)
 print("Совместность системы:")
-x = True
-if True == x:
+if A.rang == A.kron_kap(B):
     print("Система совместна!")
     B.multi_mat_vec(P, B)
     for i in range(n):
@@ -222,7 +217,18 @@ if True == x:
     Rezult = Help_Vector(n)
     Rezult.multi_mat_vec(A, X)
     Rezult.display()
-
+else:
+    print("Система не совместна!")
+    print('Проверка:')
+    print("Multiplication L and U:")
+    M_1 = Matrix(n)
+    M_1.multi(L, U)
+    M_1.display()
+    M_2 = Matrix(n)
+    M_2.multi(P, A)
+    M_2.multi(M_2, Q)
+    print("Multiplication PA and Q:")
+    M_2.display()
 
 
 #Нахождение обратной матрицы
