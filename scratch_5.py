@@ -12,7 +12,7 @@ class Matrix:
         self.matrix = [[randint(-50, 50) for _ in range(self._length)] for _ in range(self._length)]
         for i in range(self._length):
             self.matrix[2][i] = self.matrix[0][i] + self.matrix[1][i]
-            self.matrix[3][i] = self.matrix[0][i] - self.matrix[1][i]
+            self.matrix[7][i] = self.matrix[3][i] - self.matrix[9][i]
 
     def det(self, a, b):
         det = 1
@@ -21,7 +21,7 @@ class Matrix:
         self.deter = det
 
     def LU_matrix(self, U, L, P, Q):
-        eps = 1e-6
+        eps = 1e-10
         for k in range(self._length):
             maxx = 0
             max_row = 0
@@ -38,7 +38,7 @@ class Matrix:
                 Q.swap_col(max_col, k)
                 self.swap_col(max_col, k)
             else:
-                continue
+                self.rang = k
             if abs(self.matrix[k][k]) - eps > 0:
                 for i in range(k+1, self._length):
                     self.matrix[i][k] = self.matrix[i][k]/self.matrix[k][k]
@@ -127,7 +127,10 @@ class Vector:
         self._length = n
 
     def get_vector(self):
-        self.vector = [int(input()) for _ in range(self._length)]
+        self.vector = [randint(-50, 50) for _ in range(self._length)]
+        for i in range(self._length):
+            self.vector[2] = self.vector[0] + self.vector[1]
+            self.vector[7] = self.vector[3] - self.vector[9]
 
     def display(self):
         for i in range(self._length):
@@ -162,7 +165,7 @@ print()
 Y = Help_Vector(n)
 X = Help_Vector(n)
 Z = Help_Vector(n)
-I = Help_Matrix(n)
+#I = Help_Matrix(n)
 U = Help_Matrix(n)
 L = Help_Matrix(n)
 Q = Help_Matrix(n)
@@ -177,6 +180,10 @@ Buf.matrix = buf
 Buf.LU_matrix(U, L, P, Q)
 A.rang = Buf.rang
 A.display()
+print("==================================================================================")
+B.display()
+print()
+print("==================================================================================")
 print("Ранг матрицы")
 print(A.rang)
 print("Совместность системы:")
@@ -189,14 +196,11 @@ if A.rang == A.kron_kap(B):
             sum += Y.vector[j]*L.matrix[i][j]
         Y.vector[i] = B.vector[i] - sum
 
-    for i in reversed(range(n)):
+    for i in reversed(range(A.rang)):
         sum = 0
         for j in range(i+1, n):
             sum += Z.vector[j]*U.matrix[i][j]
-        if U.matrix[i][i] != 0:
-            Z.vector[i] = (Y.vector[i] - sum)/U.matrix[i][i]
-        else:
-            Z.vector[i] = 0
+        Z.vector[i] = (Y.vector[i] - sum)/U.matrix[i][i]
     X.multi_mat_vec(Q, Z)
     print("Решение уравнения")
     X.display()
@@ -208,11 +212,13 @@ if A.rang == A.kron_kap(B):
     M_1 = Matrix(n)
     M_1.multi(L, U)
     M_1.display()
+    print("==================================================================================")
     M_2 = Matrix(n)
     M_2.multi(P, A)
     M_2.multi(M_2, Q)
     print("Multiplication PA and Q:")
     M_2.display()
+    print("==================================================================================")
     print('б)')
     Rezult = Help_Vector(n)
     Rezult.multi_mat_vec(A, X)
@@ -224,6 +230,7 @@ else:
     M_1 = Matrix(n)
     M_1.multi(L, U)
     M_1.display()
+    print("==================================================================================")
     M_2 = Matrix(n)
     M_2.multi(P, A)
     M_2.multi(M_2, Q)
