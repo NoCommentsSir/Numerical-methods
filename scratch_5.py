@@ -1,4 +1,5 @@
 from math import *
+import copy
 from random import randint
 n = int(input())
 class Matrix:
@@ -10,9 +11,6 @@ class Matrix:
 
     def get_matrix(self):
         self.matrix = [[randint(-50, 50) for _ in range(self._length)] for _ in range(self._length)]
-        for i in range(self._length):
-            self.matrix[2][i] = self.matrix[0][i] + self.matrix[1][i]
-            self.matrix[7][i] = self.matrix[3][i] - self.matrix[9][i]
 
     def det(self, a, b):
         det = 1
@@ -111,6 +109,51 @@ class Matrix:
         Buff.LU_matrix(U,L,P,Q)
         return Buff.rang
 
+    def transpose(self):
+        for i in range(self._length):
+            for j in range(i+1, self._length):
+                x = self.matrix[i][j]
+                self.matrix[i][j] = self.matrix[j][i]
+                self.matrix[j][i] = x
+        return self
+
+
+    def norm_vec(self, a):
+        norm = 0
+        for i in range(self._length):
+            norm += a[i]*a[i]
+        return sqrt(norm)
+
+    def scal(self, a, b):
+        multi = 0
+        for i in range(self._length):
+            multi += a[i]*b[i]
+        return multi
+
+    def proj(self, a, b):
+        new_a = []
+        for i in range(self._length):
+            new_a.append((self.scal(a,b)/self.scal(b,b))*b[i])
+        return new_a
+
+    def gram_s(self):
+        new_matrix = []
+        self.transpose()
+        for i in range(self._length):
+            a = self.matrix[i]
+            for j in new_matrix:
+                p = self.proj(a, j)
+                for k in range(self._length):
+                    a[k] = a[k]-p[k]
+            norm = self.norm_vec(a)
+            for k in range(self._length):
+                a[k] = a[k] / norm
+            new_matrix.append(a)
+        self.matrix = new_matrix
+        self.transpose()
+        return self
+
+
 
 class Help_Matrix(Matrix):
     def __init__(self, n):
@@ -128,9 +171,6 @@ class Vector:
 
     def get_vector(self):
         self.vector = [randint(-50, 50) for _ in range(self._length)]
-        for i in range(self._length):
-            self.vector[2] = self.vector[0] + self.vector[1]
-            self.vector[7] = self.vector[3] - self.vector[9]
 
     def display(self):
         for i in range(self._length):
@@ -156,103 +196,120 @@ class Help_Vector(Vector):
         self.vector = [0 for _ in range(self._length)]
 
 A = Matrix(n)
-print("Генерация матрицы")
+print("Генерация матрицы:")
 A.get_matrix()
-B = Vector(n)
-print("Генерация вектора значений")
-B.get_vector()
+A.display()
 print()
+print("Генерация вектора значений:")
+B = Vector(n)
+B.get_vector()
+B.display()
+print("\n")
+print("==================================================================================")
 Y = Help_Vector(n)
 X = Help_Vector(n)
-Z = Help_Vector(n)
-#I = Help_Matrix(n)
+I = Help_Matrix(n)
 U = Help_Matrix(n)
 L = Help_Matrix(n)
-Q = Help_Matrix(n)
 P = Help_Matrix(n)
-
+Y_m = Help_Matrix(n)
+Z_m = Help_Matrix(n)
+QLU = Help_Matrix(n)
 Buf = Matrix(n)
-buf = [[None for _ in range(A._length)] for _ in range(A._length)]
-for i in range(A._length):
-    for j in range(A._length):
-        buf[i][j] = A.matrix[i][j]
-Buf.matrix = buf
-Buf.LU_matrix(U, L, P, Q)
-A.rang = Buf.rang
-A.display()
-print("==================================================================================")
-B.display()
+Q = copy.deepcopy(A)
+R = copy.deepcopy(A)
+# Buf.LU_matrix(U, L, P, Q)
+# A.rang = Buf.rang
+Q.gram_s()
+Q_1 = Matrix(n)
+Q_1 = copy.deepcopy(Q)
+Q_1 = Q_1.transpose()
+R.multi(Q_1, A)
+R_2 = copy.deepcopy(R)
+R_2.LU_matrix(U, L, P, QLU)
+I.multi(P, I)
+for i in range(n):
+    for j in range(n):
+        sum = 0
+        for k in range(i):
+            sum += L.matrix[i][k] * Y_m.matrix[k][j]
+        Y_m.matrix[i][j] = I.matrix[i][j] - sum
+
+for i in reversed(range(n)):
+    for j in range(n):
+        sum = 0
+        for k in range(i+1, n):
+            sum += U.matrix[i][k] * Z_m.matrix[k][j]
+        Z_m.matrix[i][j] = (Y_m.matrix[i][j] - sum)/U.matrix[i][i]
+
+Z_m.multi(QLU, Z_m)
+
+Y.multi_mat_vec(Q_1, B)
+X.multi_mat_vec(Z_m, Y)
+print("Вектор значений:")
+X.display()
 print()
 print("==================================================================================")
-print("Ранг матрицы")
-print(A.rang)
-print("Совместность системы:")
-if A.rang == A.kron_kap(B):
-    print("Система совместна!")
-    B.multi_mat_vec(P, B)
-    for i in range(n):
-        sum = 0
-        for j in range(i):
-            sum += Y.vector[j]*L.matrix[i][j]
-        Y.vector[i] = B.vector[i] - sum
-
-    for i in reversed(range(A.rang)):
-        sum = 0
-        for j in range(i+1, n):
-            sum += Z.vector[j]*U.matrix[i][j]
-        Z.vector[i] = (Y.vector[i] - sum)/U.matrix[i][i]
-    X.multi_mat_vec(Q, Z)
-    print("Решение уравнения")
-    X.display()
-    print('\n')
-    print('=================================')
-    print('Проверки по пунктам:')
-    print('а)')
-    print("Multiplication L and U:")
-    M_1 = Matrix(n)
-    M_1.multi(L, U)
-    M_1.display()
-    print("==================================================================================")
-    M_2 = Matrix(n)
-    M_2.multi(P, A)
-    M_2.multi(M_2, Q)
-    print("Multiplication PA and Q:")
-    M_2.display()
-    print("==================================================================================")
-    print('б)')
-    Rezult = Help_Vector(n)
-    Rezult.multi_mat_vec(A, X)
-    Rezult.display()
-else:
-    print("Система не совместна!")
-    print('Проверка:')
-    print("Multiplication L and U:")
-    M_1 = Matrix(n)
-    M_1.multi(L, U)
-    M_1.display()
-    print("==================================================================================")
-    M_2 = Matrix(n)
-    M_2.multi(P, A)
-    M_2.multi(M_2, Q)
-    print("Multiplication PA and Q:")
-    M_2.display()
-
-
-#Нахождение обратной матрицы
-# I.multi(P, I)
-#
-# for i in range(n):
-#     for j in range(n):
+print("Проверки по этапам\n")
+print("Этап 1 - правильность разложения на Q и R:\n")
+Buf.multi(Q, R)
+Buf.display()
+print()
+print("Этап 2 - правильность найденного вектора значений:\n")
+M = Vector(n)
+M.multi_mat_vec(A,X)
+M.display()
+#===============================================================================================================================================
+#Решение 1 и 2 пункта
+# print("Ранг матрицы")
+# print(A.rang)
+# print("Совместность системы:")
+# if A.rang == A.kron_kap(B):
+#     print("Система совместна!")
+#     B.multi_mat_vec(P, B)
+#     for i in range(n):
 #         sum = 0
-#         for k in range(i):
-#             sum += L.matrix[i][k] * Y_m.matrix[k][j]
-#         Y_m.matrix[i][j] = I.matrix[i][j] - sum
+#         for j in range(i):
+#             sum += Y.vector[j]*L.matrix[i][j]
+#         Y.vector[i] = B.vector[i] - sum
 #
-# for i in reversed(range(n)):
-#     for j in range(n):
+#     for i in reversed(range(A.rang)):
 #         sum = 0
-#         for k in range(i+1, n):
-#             sum += U.matrix[i][k] * Z_m.matrix[k][j]
-#         Z_m.matrix[i][j] = (Y_m.matrix[i][j] - sum)/U.matrix[i][i]
-#
-# X_m.multi(Q, Z_m)
+#         for j in range(i+1, n):
+#             sum += Z.vector[j]*U.matrix[i][j]
+#         Z.vector[i] = (Y.vector[i] - sum)/U.matrix[i][i]
+#     X.multi_mat_vec(Q, Z)
+#     print("Решение уравнения")
+#     X.display()
+#     print('\n')
+#     print('=================================')
+#     print('Проверки по пунктам:')
+#     print('а)')
+#     print("Multiplication L and U:")
+#     M_1 = Matrix(n)
+#     M_1.multi(L, U)
+#     M_1.display()
+#     print("==================================================================================")
+#     M_2 = Matrix(n)
+#     M_2.multi(P, A)
+#     M_2.multi(M_2, Q)
+#     print("Multiplication PA and Q:")
+#     M_2.display()
+#     print("==================================================================================")
+#     print('б)')
+#     Rezult = Help_Vector(n)
+#     Rezult.multi_mat_vec(A, X)
+#     Rezult.display()
+# else:
+#     print("Система не совместна!")
+#     print('Проверка:')
+#     print("Multiplication L and U:")
+#     M_1 = Matrix(n)
+#     M_1.multi(L, U)
+#     M_1.display()
+#     print("==================================================================================")
+#     M_2 = Matrix(n)
+#     M_2.multi(P, A)
+#     M_2.multi(M_2, Q)
+#     print("Multiplication PA and Q:")
+#     M_2.display()
