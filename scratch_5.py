@@ -2,6 +2,7 @@ from math import *
 import copy
 from random import randint
 n = int(input())
+eps = 1e-10
 class Matrix:
 
     def __init__(self, n):
@@ -10,7 +11,7 @@ class Matrix:
         self.check = False
 
     def get_matrix(self):
-        self.matrix = [[randint(-50, 50) for _ in range(self._length)] for _ in range(self._length)]
+        self.matrix = [[randint(-50,50) for _ in range(self._length)] for _ in range(self._length)]
 
     def det(self, a, b):
         det = 1
@@ -54,6 +55,11 @@ class Matrix:
 
         self.check = True
 
+    def sum_matrix(self, A, B):
+        for i in range(self._length):
+            for j in range(self._length):
+                self.matrix[i][j] = A.matrix[i][j]+B.matrix[i][j]
+
     def multi(self, a, b):
         M = []
         for i in range(a._length):
@@ -65,6 +71,11 @@ class Matrix:
                 row.append(sum)
             M.append(row)
         self.matrix = M
+
+    def multi_const(self, k):
+        for i in range(self._length):
+            for j in range(self._length):
+                self.matrix[i][j] *= k
 
     def swap_row(self, a, b):
         temp = self.matrix[a]
@@ -153,7 +164,120 @@ class Matrix:
         self.transpose()
         return self
 
+    def decompose(self, L, D, R):
+        for i in range(self._length):
+            for j in range(self._length):
+                if i < j:
+                    R.matrix[i][j] = self.matrix[i][j]
+                elif i == j:
+                    D.matrix[i][j] = self.matrix[i][j]
+                else:
+                    L.matrix[i][j] = self.matrix[i][j]
 
+    def change(self):
+        sum_max = 0
+        for k in range(n):
+            sum_el = 0
+            for i in range(n):
+                if i != k:
+                    sum_el += abs(self.matrix[k][i])
+            if sum_max < sum_el:
+                sum_max = sum_el
+        for k in range(n):
+            if sum_max >= abs(self.matrix[k][k]):
+                self.matrix[k][k] += sum_max
+
+    def Obr_matrix(self):
+        I = Help_Matrix(self._length)
+        U = Help_Matrix(self._length)
+        L = Help_Matrix(self._length)
+        P = Help_Matrix(self._length)
+        Y_m = Help_Matrix(self._length)
+        Z_m = Help_Matrix(self._length)
+        QLU = Help_Matrix(n)
+        Buf = Matrix(n)
+        Buf = copy.deepcopy(self)
+        Buf.LU_matrix(U, L, P, QLU)
+        I.multi(P, I)
+        for i in range(self._length):
+            for j in range(self._length):
+                sum = 0
+                for k in range(i):
+                    sum += L.matrix[i][k] * Y_m.matrix[k][j]
+                Y_m.matrix[i][j] = I.matrix[i][j] - sum
+
+        for i in reversed(range(self._length)):
+            for j in range(self._length):
+                sum = 0
+                for k in range(i + 1, self._length):
+                    sum += U.matrix[i][k] * Z_m.matrix[k][j]
+                Z_m.matrix[i][j] = (Y_m.matrix[i][j] - sum) / U.matrix[i][i]
+        Z_m.multi(QLU, Z_m)
+        return Z_m
+
+    def Jacobi(self, B, C, q, b):
+        k = 1
+        iterator_prev = Help_Vector(self._length)
+        diff = Help_Vector(self._length)
+        Rez = Help_Vector(self._length)
+        iterator_curr = copy.deepcopy(C)
+        norm_iterator = C.norm
+        while q / (1 - q) * norm_iterator > eps:
+            iterator_prev = copy.deepcopy(iterator_curr)
+            iterator_curr.multi_mat_vec(B, iterator_prev)
+            iterator_curr.sum_vector(iterator_curr, C)
+            diff.razn_vector(iterator_curr, iterator_prev)
+            diff.norma()
+            norm_iterator = diff.norm
+            k += 1
+        Rez.multi_mat_vec(self, iterator_curr)
+        print('Ax = b in Jacobi:')
+        Rez.display()
+        return k
+
+    def Seidel(self, Bmatrix_L, Bmatrix_R, C, q):
+        k = 1
+        iterator_prev = Help_Vector(self._length)
+        Rez = Help_Vector(self._length)
+        iterator_curr = copy.deepcopy(C)
+        norm_iterator = C.norm
+        while q / (1 - q) * norm_iterator > eps:
+            diff = Help_Vector(self._length)
+            iterator_prev = copy.deepcopy(iterator_curr)
+            for i in range(self._length):
+                W1 = Vector(i)
+                W3 = Vector(i)
+                temp1 = []
+                temp3 = []
+                for j in range(0,i):
+                    temp1.append(Bmatrix_L.matrix[i][j])
+                    temp3.append(iterator_curr.vector[j])
+                W1.vector = temp1
+                W3.vector = temp3
+                W2 = Vector(self._length - i)
+                W4 = Vector(self._length - i)
+                temp2 = []
+                temp4 = []
+                for j in range(i,self._length):
+                    temp2.append(Bmatrix_R.matrix[i][j])
+                    temp4.append(iterator_prev.vector[j])
+                W2.vector = temp2
+                W4.vector = temp4
+                k1 = 0
+                k2 = 0
+                for q in range(len(W1.vector)):
+                    k1 += W1.vector[q]*W3.vector[q]
+                for p in range(len(W2.vector)):
+                    k2 += W2.vector[p]*W4.vector[p]
+                iterator_curr.vector[i] = k1 + k2 + C.vector[i]
+            diff.razn_vector(iterator_curr, iterator_prev)
+            diff.norma()
+            norm_iterator = diff.norm
+            k += 1
+        Rez.multi_mat_vec(self, iterator_curr)
+        print('Ax = b in Seidel:')
+        Rez.display()
+        return k
 
 class Help_Matrix(Matrix):
     def __init__(self, n):
@@ -168,6 +292,7 @@ class Vector:
 
     def __init__(self, n):
         self._length = n
+        self.vector = []
 
     def get_vector(self):
         self.vector = [randint(-50, 50) for _ in range(self._length)]
@@ -190,6 +315,26 @@ class Vector:
         self.vector[a] = self.vector[b]
         self.vector[b] = temp
 
+    def norma(self):
+        sum = 0
+        for i in range(self._length):
+            sum += self.vector[i]**2
+        self.norm = sqrt(sum)
+
+    def sum_vector(self, A, B):
+        for i in range(self._length):
+            self.vector[i] = A.vector[i]+B.vector[i]
+
+    def multi_vec(self, A, B):
+        sum = 0
+        for i in range(self._length):
+            sum += A.vector[i]*B.vector[i]
+        return sum
+
+    def razn_vector(self, A, B):
+        for i in range(self._length):
+            self.vector[i] = A.vector[i]-B.vector[i]
+
 class Help_Vector(Vector):
     def __init__(self, length):
         self._length = length
@@ -206,59 +351,112 @@ B.get_vector()
 B.display()
 print("\n")
 print("==================================================================================")
-Y = Help_Vector(n)
-X = Help_Vector(n)
-I = Help_Matrix(n)
-U = Help_Matrix(n)
-L = Help_Matrix(n)
-P = Help_Matrix(n)
-Y_m = Help_Matrix(n)
-Z_m = Help_Matrix(n)
-QLU = Help_Matrix(n)
+A_T = Matrix(n)
+A_T = copy.deepcopy(A)
+A_T.transpose()
+A_diag = copy.deepcopy(A)
+A_diag.change()
+A_diag.display()
+A_cv_form = Matrix(n)
+A_cv_form.multi(A, A_T)
 Buf = Matrix(n)
-Q = copy.deepcopy(A)
-R = copy.deepcopy(A)
-# Buf.LU_matrix(U, L, P, Q)
-# A.rang = Buf.rang
-Q.gram_s()
-Q_1 = Matrix(n)
-Q_1 = copy.deepcopy(Q)
-Q_1 = Q_1.transpose()
-R.multi(Q_1, A)
-R_2 = copy.deepcopy(R)
-R_2.LU_matrix(U, L, P, QLU)
-I.multi(P, I)
-for i in range(n):
-    for j in range(n):
-        sum = 0
-        for k in range(i):
-            sum += L.matrix[i][k] * Y_m.matrix[k][j]
-        Y_m.matrix[i][j] = I.matrix[i][j] - sum
+Buf = copy.deepcopy(A)
+Buf.change()
+L = Help_Matrix(n)
+L.matrix = [[0 for _ in range(n)] for _ in range(n)]
+R = Help_Matrix(n)
+R = copy.deepcopy(L)
+D = Help_Matrix(n)
+D = copy.deepcopy(L)
+Buf.decompose(L, D, R)
+D_inv = D.Obr_matrix()
+Bmatrix = Help_Matrix(n)
+Bmatrix.sum_matrix(L,R)
+Bmatrix.multi(D_inv, Bmatrix)
+Bmatrix.multi_const(-1)
+Bmatrix_l = Help_Matrix(n)
+Bmatrix_l.multi(D_inv, L)
+Bmatrix_l.multi_const(-1)
+Bmatrix_l.display()
+Bmatrix_r = Help_Matrix(n)
+Bmatrix_r.multi(D_inv, R)
+Bmatrix_r.multi_const(-1)
+Bmatrix_r.display()
+C = Help_Vector(n)
+C.multi_mat_vec(D_inv, B)
+Bmatrix.norma()
+C.norma()
+if Bmatrix.norm < 1:
+    q = Bmatrix.norm
+if Bmatrix.norm > 1:
+    q = 1e-1
+print('q:')
+print(q)
+k = ceil(log((eps/ C.norm * (1 - q)), q))
+print('k:')
+print(k)
+print('Jacobi:')
+c = copy.deepcopy(A_diag)
+count_jac = A_diag.Jacobi(Bmatrix, C, q, B)
+print(count_jac)
+print('Seidel:')
+count_sei = A_diag.Seidel(Bmatrix_l, Bmatrix_r, C, q)
+print(count_sei)
+B.display()
 
-for i in reversed(range(n)):
-    for j in range(n):
-        sum = 0
-        for k in range(i+1, n):
-            sum += U.matrix[i][k] * Z_m.matrix[k][j]
-        Z_m.matrix[i][j] = (Y_m.matrix[i][j] - sum)/U.matrix[i][i]
-
-Z_m.multi(QLU, Z_m)
-
-Y.multi_mat_vec(Q_1, B)
-X.multi_mat_vec(Z_m, Y)
-print("Вектор значений:")
-X.display()
-print()
-print("==================================================================================")
-print("Проверки по этапам\n")
-print("Этап 1 - правильность разложения на Q и R:\n")
-Buf.multi(Q, R)
-Buf.display()
-print()
-print("Этап 2 - правильность найденного вектора значений:\n")
-M = Vector(n)
-M.multi_mat_vec(A,X)
-M.display()
+# Y = Help_Vector(n)
+# X = Help_Vector(n)
+# I = Help_Matrix(n)
+# U = Help_Matrix(n)
+# L = Help_Matrix(n)
+# P = Help_Matrix(n)
+# Y_m = Help_Matrix(n)
+# Z_m = Help_Matrix(n)
+# QLU = Help_Matrix(n)
+# Buf = Matrix(n)
+# Q = copy.deepcopy(A)
+# R = copy.deepcopy(A)
+# # Buf.LU_matrix(U, L, P, Q)
+# # A.rang = Buf.rang
+# Q.gram_s()
+# Q_1 = Matrix(n)
+# Q_1 = copy.deepcopy(Q)
+# Q_1 = Q_1.transpose()
+# R.multi(Q_1, A)
+# R_2 = copy.deepcopy(R)
+# R_2.LU_matrix(U, L, P, QLU)
+# I.multi(P, I)
+# for i in range(n):
+#     for j in range(n):
+#         sum = 0
+#         for k in range(i):
+#             sum += L.matrix[i][k] * Y_m.matrix[k][j]
+#         Y_m.matrix[i][j] = I.matrix[i][j] - sum
+#
+# for i in reversed(range(n)):
+#     for j in range(n):
+#         sum = 0
+#         for k in range(i+1, n):
+#             sum += U.matrix[i][k] * Z_m.matrix[k][j]
+#         Z_m.matrix[i][j] = (Y_m.matrix[i][j] - sum)/U.matrix[i][i]
+#
+# Z_m.multi(QLU, Z_m)
+#
+# Y.multi_mat_vec(Q_1, B)
+# X.multi_mat_vec(Z_m, Y)
+# print("Вектор значений:")
+# X.display()
+# print()
+# print("==================================================================================")
+# print("Проверки по этапам\n")
+# print("Этап 1 - правильность разложения на Q и R:\n")
+# Buf.multi(Q, R)
+# Buf.display()
+# print()
+# print("Этап 2 - правильность найденного вектора значений:\n")
+# M = Vector(n)
+# M.multi_mat_vec(A,X)
+# M.display()
 #===============================================================================================================================================
 #Решение 1 и 2 пункта
 # print("Ранг матрицы")
