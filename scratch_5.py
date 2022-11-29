@@ -2,7 +2,7 @@ from math import *
 import copy
 from random import randint
 n = int(input())
-eps = 1e-10
+eps = 1e-6
 class Matrix:
 
     def __init__(self, n):
@@ -215,11 +215,12 @@ class Matrix:
         Z_m.multi(QLU, Z_m)
         return Z_m
 
-    def Jacobi(self, B, C, q, b):
+    def Jacobi(self, B, C, q, x, A):
         k = 1
         iterator_prev = Help_Vector(self._length)
         diff = Help_Vector(self._length)
         Rez = Help_Vector(self._length)
+        Exam = Help_Vector(self._length)
         iterator_curr = copy.deepcopy(C)
         norm_iterator = C.norm
         while q / (1 - q) * norm_iterator > eps:
@@ -233,43 +234,29 @@ class Matrix:
         Rez.multi_mat_vec(self, iterator_curr)
         print('Ax = b in Jacobi:')
         Rez.display()
+        print()
+        print("Проверка точности")
+        Exam.multi_mat_vec(A, x)
+        Exam.razn_vector(Rez, Exam)
+        Exam.display()
+        print()
         return k
 
-    def Seidel(self, Bmatrix_L, Bmatrix_R, C, q):
+    def Seidel(self, Bmatrix, C, q, x, A):
         k = 1
         iterator_prev = Help_Vector(self._length)
         Rez = Help_Vector(self._length)
+        Exam = Help_Vector(self._length)
         iterator_curr = copy.deepcopy(C)
         norm_iterator = C.norm
         while q / (1 - q) * norm_iterator > eps:
             diff = Help_Vector(self._length)
             iterator_prev = copy.deepcopy(iterator_curr)
             for i in range(self._length):
-                W1 = Vector(i)
-                W3 = Vector(i)
-                temp1 = []
-                temp3 = []
-                for j in range(0,i):
-                    temp1.append(Bmatrix_L.matrix[i][j])
-                    temp3.append(iterator_curr.vector[j])
-                W1.vector = temp1
-                W3.vector = temp3
-                W2 = Vector(self._length - i)
-                W4 = Vector(self._length - i)
-                temp2 = []
-                temp4 = []
-                for j in range(i,self._length):
-                    temp2.append(Bmatrix_R.matrix[i][j])
-                    temp4.append(iterator_prev.vector[j])
-                W2.vector = temp2
-                W4.vector = temp4
                 k1 = 0
-                k2 = 0
-                for q in range(len(W1.vector)):
-                    k1 += W1.vector[q]*W3.vector[q]
-                for p in range(len(W2.vector)):
-                    k2 += W2.vector[p]*W4.vector[p]
-                iterator_curr.vector[i] = k1 + k2 + C.vector[i]
+                for j in range(self._length):
+                    k1 += Bmatrix.matrix[i][j]*iterator_curr.vector[j]
+                iterator_curr.vector[i] = k1 + C.vector[i]
             diff.razn_vector(iterator_curr, iterator_prev)
             diff.norma()
             norm_iterator = diff.norm
@@ -277,6 +264,12 @@ class Matrix:
         Rez.multi_mat_vec(self, iterator_curr)
         print('Ax = b in Seidel:')
         Rez.display()
+        print()
+        print("Проверка точности")
+        Exam.multi_mat_vec(A, x)
+        Exam.razn_vector(Rez, Exam)
+        Exam.display()
+        print()
         return k
 
 class Help_Matrix(Matrix):
@@ -351,12 +344,33 @@ B.get_vector()
 B.display()
 print("\n")
 print("==================================================================================")
+Buff1 = copy.deepcopy(A)
+L1 = Help_Matrix(n)
+U1 = Help_Matrix(n)
+Q1 = Help_Matrix(n)
+P1 = Help_Matrix(n)
+y = Help_Vector(n)
+x = Help_Vector(n)
+z = Help_Vector(n)
+b = Help_Vector(n)
+Buff1.LU_matrix(U1, L1, P1, Q1)
+b.multi_mat_vec(P1, B)
+for i in range(n):
+    sum = 0
+    for j in range(i):
+        sum += y.vector[j]*L1.matrix[i][j]
+    y.vector[i] = b.vector[i] - sum
+for i in reversed(range(n)):
+    sum = 0
+    for j in range(i+1, n):
+        sum += z.vector[j]*U1.matrix[i][j]
+    z.vector[i] = (y.vector[i] - sum)/U1.matrix[i][i]
+x.multi_mat_vec(Q1, z)
 A_T = Matrix(n)
 A_T = copy.deepcopy(A)
 A_T.transpose()
 A_diag = copy.deepcopy(A)
 A_diag.change()
-A_diag.display()
 A_cv_form = Matrix(n)
 A_cv_form.multi(A, A_T)
 Buf = Matrix(n)
@@ -374,14 +388,6 @@ Bmatrix = Help_Matrix(n)
 Bmatrix.sum_matrix(L,R)
 Bmatrix.multi(D_inv, Bmatrix)
 Bmatrix.multi_const(-1)
-Bmatrix_l = Help_Matrix(n)
-Bmatrix_l.multi(D_inv, L)
-Bmatrix_l.multi_const(-1)
-Bmatrix_l.display()
-Bmatrix_r = Help_Matrix(n)
-Bmatrix_r.multi(D_inv, R)
-Bmatrix_r.multi_const(-1)
-Bmatrix_r.display()
 C = Help_Vector(n)
 C.multi_mat_vec(D_inv, B)
 Bmatrix.norma()
@@ -397,12 +403,11 @@ print('k:')
 print(k)
 print('Jacobi:')
 c = copy.deepcopy(A_diag)
-count_jac = A_diag.Jacobi(Bmatrix, C, q, B)
+count_jac = A_diag.Jacobi(Bmatrix, C, q, x, A)
 print(count_jac)
 print('Seidel:')
-count_sei = A_diag.Seidel(Bmatrix_l, Bmatrix_r, C, q)
+count_sei = A_diag.Seidel(Bmatrix, C, q, x, A)
 print(count_sei)
-B.display()
 
 # Y = Help_Vector(n)
 # X = Help_Vector(n)
