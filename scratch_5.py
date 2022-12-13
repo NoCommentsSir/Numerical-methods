@@ -6,7 +6,7 @@ from datetime import datetime
 import numpy
 n = int(input())
 eps = 1e-6
-delta = 1e-3
+delta = 1e-4
 class Matrix:
 
     def __init__(self, n):
@@ -25,7 +25,7 @@ class Matrix:
         self.deter = det
 
     def LU_matrix(self, U, L, P, Q):
-        eps = 1e-10
+        eps = 1e-6
         operation = 0
         for k in range(self._length):
             maxx = 0
@@ -494,45 +494,45 @@ def Modified_Newton(X):
     F = Vector(10)
     J = Matrix(10)
     F1 = Vector(10)
-    F1 = get_vector_f(X)
-    F2 = Help_Vector(10)
+    # F1 = get_vector_f(X)
+    # F2 = Help_Vector(10)
     count = 0
     operation = 0
-    delta_F = Help_Vector(10)
-    delta_F.razn_vector(F2,F1)
-    delta_F.norma()
-    operation += delta_F.operation
-    q1 = delta_F.norm
+    # delta_F = Help_Vector(10)
+    # delta_F.razn_vector(F2,F1)
+    # delta_F.norma()
+    # operation += delta_F.operation
+    # q1 = delta_F.norm
     x_next = Help_Vector(10)
     x_curr = copy.deepcopy(X)
     J = get_Jacobi_matrix(x_curr)
     J.norma()
     operation += J.operation
-    alpha = eps*J.norm
+    # alpha = eps*J.norm
     delta_x = Help_Vector(10)
     delta_x.razn_vector(x_next, x_curr)
     delta_x.norma()
     q = delta_x.norm
     operation += delta_x.operation
     start_time = datetime.now()
-    while(q > eps and q1 > alpha):
+    while(q > eps ): #and q1 > alpha
         F = get_vector_f(x_curr)
         F.multi_const(-1)
         operation += 100
         x_next = J.uravn(F)
         x_next.norma()
         operation += x_next.operation
-        F.multi_const(-1)
+        # F.multi_const(-1)
         operation += 100
         x_curr.sum_vector(x_next, x_curr)
         operation += 10
-        F3 = Vector(10)
-        F3 = get_vector_f(x_curr)
-        F3.razn_vector(F3, F)
-        operation += 10
-        F3.norma()
-        operation += F3.operation
-        q1 = F3.norm
+        # F3 = Vector(10)
+        # F3 = get_vector_f(x_curr)
+        # F3.razn_vector(F3, F)
+        # operation += 10
+        # F3.norma()
+        # operation += F3.operation
+        # q1 = F3.norm
         q = x_next.norm
         count += 1
     time = datetime.now() - start_time
@@ -644,7 +644,6 @@ def Hybrid_Newton(X):
     F1 = Vector(10)
     F1 = get_vector_f(X)
     F2 = Help_Vector(10)
-    X1 = []
     count = 0
     operation = 0
     delta_F = Help_Vector(10)
@@ -686,7 +685,6 @@ def Hybrid_Newton(X):
         operation += F3.operation
         q1 = F3.norm
         q = x_next.norm
-        X1.append(x_curr)
         temp += 1
         count += 1
     time = datetime.now() - start_time
@@ -695,11 +693,35 @@ def Hybrid_Newton(X):
     arr.append(operation)
     arr.append(time)
     arr.append(x_curr)
-    arr.append(len(X1))
+    return arr
+
+def scal_Newton(x):
+    x_next = 0
+    x_curr = x
+    delta = x_curr - x_next
+    count = 0
+    operation = 0
+    stime = datetime.now()
+    while(abs(delta) - eps > 0):
+        F = x_curr**2 + 1 - math.tan(x_curr)
+        operation += 19
+        J = 2*x - 1/(math.cos(x_curr)*math.cos(x_curr))
+        operation += 34
+        x_next = -F/J
+        delta = x_next
+        x_curr = x_next + x_curr
+        operation += 3
+        count += 1
+    time = datetime.now() - stime
+    arr = []
+    arr.append(count)
+    arr.append(operation)
+    arr.append(time)
+    arr.append(x_curr)
     return arr
 
 X = Vector(10)
-X.vector = [0.5, 0.5, 1.5, -1, -0.2, 1.5, 0.5, -0.5, 1.5, -1.5]
+X.vector = [0.5, 0.5, 1.5, -1, -0.5, 1.5, 0.5, -0.5, 1.5, -1.5]
 print("==================================================================================")
 print("Полный метод Ньютона")
 k1 = Newton(X)
@@ -753,8 +775,16 @@ print(k5[2])
 print("Количество операций:")
 print(k5[1])
 print(f'Количество итераций: {k5[0]}')
-print(f'Количество корней: {k5[4]}')
-
+print("==================================================================================")
+print("Метод Ньютона для скалярного уравнения")
+k6 = scal_Newton(1.1)
+print("Решение:")
+print(k6[3])
+print("Затраченное время:")
+print(k6[2])
+print("Количество операций:")
+print(k6[1])
+print(f'Количество итераций: {k6[0]}')
 
 
 
