@@ -2,11 +2,9 @@ import math
 import copy
 from random import randint
 from datetime import datetime
-
-import numpy
 n = int(input())
 eps = 1e-6
-delta = 1e-4
+delta = 1e-8
 class Matrix:
 
     def __init__(self, n):
@@ -16,7 +14,12 @@ class Matrix:
         self.operation = 0
 
     def get_matrix(self):
-        self.matrix = [[randint(-1000,1000) for _ in range(self._length)] for _ in range(self._length)]
+        self.matrix = [[randint(-10,10) for _ in range(self._length)] for _ in range(self._length)]
+
+    def get_diag_matrix(self):
+        self.matrix = [[0 for _ in range(self._length)] for _ in range(self._length)]
+        for i in range(self._length):
+            self.matrix[i][i] = randint(-10,10)
 
     def det(self, a, b):
         det = 1
@@ -347,7 +350,7 @@ class Vector:
         self.operation = 0
 
     def get_vector(self):
-        self.vector = [randint(-1000, 1000) for _ in range(self._length)]
+        self.vector = [randint(-10, 10) for _ in range(self._length)]
 
     def display(self):
         for i in range(self._length):
@@ -379,10 +382,9 @@ class Vector:
         sum = 0
         count = 0
         for i in range(self._length):
-            sum += self.vector[i]**2
-            count += 2
-        count += 11
-        self.norm = math.sqrt(sum)
+            sum += abs(self.vector[i])
+            count += 1
+        self.norm = sum
         self.operation += count
 
     def sum_vector(self, A, B):
@@ -494,15 +496,15 @@ def Modified_Newton(X):
     F = Vector(10)
     J = Matrix(10)
     F1 = Vector(10)
-    # F1 = get_vector_f(X)
-    # F2 = Help_Vector(10)
+    F1 = get_vector_f(X)
+    F2 = Help_Vector(10)
     count = 0
     operation = 0
-    # delta_F = Help_Vector(10)
-    # delta_F.razn_vector(F2,F1)
-    # delta_F.norma()
-    # operation += delta_F.operation
-    # q1 = delta_F.norm
+    delta_F = Help_Vector(10)
+    delta_F.razn_vector(F2,F1)
+    delta_F.norma()
+    operation += delta_F.operation
+    q1 = delta_F.norm
     x_next = Help_Vector(10)
     x_curr = copy.deepcopy(X)
     J = get_Jacobi_matrix(x_curr)
@@ -515,24 +517,24 @@ def Modified_Newton(X):
     q = delta_x.norm
     operation += delta_x.operation
     start_time = datetime.now()
-    while(q > eps ): #and q1 > alpha
+    while(q > eps or q1 > eps):
         F = get_vector_f(x_curr)
         F.multi_const(-1)
-        operation += 100
+        operation += 10
         x_next = J.uravn(F)
         x_next.norma()
         operation += x_next.operation
-        # F.multi_const(-1)
-        operation += 100
+        F.multi_const(-1)
+        operation += 10
         x_curr.sum_vector(x_next, x_curr)
         operation += 10
-        # F3 = Vector(10)
-        # F3 = get_vector_f(x_curr)
-        # F3.razn_vector(F3, F)
-        # operation += 10
-        # F3.norma()
-        # operation += F3.operation
-        # q1 = F3.norm
+        F3 = Vector(10)
+        F3 = get_vector_f(x_curr)
+        F3.razn_vector(F3, F)
+        operation += 10
+        F3.norma()
+        operation += F3.operation
+        q1 = F3.norm
         q = x_next.norm
         count += 1
     time = datetime.now() - start_time
@@ -557,7 +559,7 @@ def Auto_Newton(X):
     q = delta_x.norm
     operation += delta_x.operation
     start_time = datetime.now()
-    while (q > eps and temp <= n):
+    while (q > eps and temp < n):
         F = get_vector_f(x_curr)
         F.multi_const(-1)
         operation += 100
@@ -570,9 +572,11 @@ def Auto_Newton(X):
         q = x_next.norm
         count += 1
         temp += 1
+    x_curr.display()
     Arr = Modified_Newton(x_curr)
     time = datetime.now() - start_time
     count += Arr[0]
+
     operation += Arr[1]
     arr = []
     arr.append(count)
@@ -719,72 +723,142 @@ def scal_Newton(x):
     arr.append(time)
     arr.append(x_curr)
     return arr
+def deg_method(A, z_0, y_0):
+    current_z = copy.deepcopy(z_0)
+    next_y = Vector(n)
+    current_lambda = Help_Vector(n)
+    next_lambda = Help_Vector(n)
+    razn_lambda = Help_Vector(n)
+    lambda_cond = False
+    while not lambda_cond:
+        current_lambda = copy.deepcopy(next_lambda)
+        current_lambda.norma()
+        I = 0
+        next_y.multi_mat_vec(A, current_z)
+        next_y.norma()
+        next_z = copy.deepcopy(next_y)
+        next_z.multi_const(1 / next_y.norm)
+        for i in range(n):
+            if abs(current_z.vector[i]) > delta:
+                next_lambda.vector[i] = next_y.vector[i] / current_z.vector[i]
+                I += 1
+            else:
+                next_lambda.vector[i] = 0
+        next_lambda.norma()
+        razn_lambda.razn_vector(next_lambda, current_lambda)
+        razn_lambda.norma()
+        lambda_cond = razn_lambda.norm < eps*max(current_lambda.norm, next_lambda.norm)
+        current_z = copy.deepcopy(next_z)
+    lambda_1 = 0
+    for i in range(n):
+        lambda_1 += next_lambda.vector[i]
+    lambda_1 /= I
+    print('Проверка')
+    ans = copy.deepcopy(next_z)
+    ans.multi_mat_vec(A, next_z)
+    ans.display()
+    print("And:")
+    next_z.multi_const(lambda_1)
+    next_z.display()
+    print("Собственное число")
+    return lambda_1
 
-X = Vector(10)
-X.vector = [0.5, 0.5, 1.5, -1, -0.5, 1.5, 0.5, -0.5, 1.5, -1.5]
-print("==================================================================================")
-print("Полный метод Ньютона")
-k1 = Newton(X)
-print("Решение:")
-k1[3].display()
-print("Затраченное время:")
-print(k1[2])
-print("Количество операций:")
-print(k1[1])
-print(f'Количество итераций: {k1[0]}')
-print("==================================================================================")
-print("Модифицированный метод Ньютона")
-k2 = Modified_Newton(X)
-print("Решение:")
-k2[3].display()
-print("Затраченное время:")
-print(k2[2])
-print("Количество операций:")
-print(k2[1])
-print(f'Количество итераций: {k2[0]}')
-print("==================================================================================")
-print("Автоматический метод Ньютона (пользователь)")
-if (k1[0] <= n):
-    print("Полный метод Ньютона из первого пункта!")
-else:
-    k3 = Auto_Newton(X)
-    print("Решение:")
-    k3[3].display()
-    print("Затраченное время:")
-    print(k3[2])
-    print("Количество операций:")
-    print(k3[1])
-    print(f'Количество итераций: {k3[0]}')
-print("==================================================================================")
-print("Автоматический метод Ньютона")
-k4 = Auto_Newton_vol_2(X)
-print("Решение:")
-k4[3].display()
-print("Затраченное время:")
-print(k4[2])
-print("Количество операций:")
-print(k4[1])
-print(f'Количество итераций: {k4[0]}')
-print("==================================================================================")
-print("Гибридный метод Ньютона (пользователь)")
-k5 = Hybrid_Newton(X)
-print("Решение:")
-k5[3].display()
-print("Затраченное время:")
-print(k5[2])
-print("Количество операций:")
-print(k5[1])
-print(f'Количество итераций: {k5[0]}')
-print("==================================================================================")
-print("Метод Ньютона для скалярного уравнения")
-k6 = scal_Newton(1.1)
-print("Решение:")
-print(k6[3])
-print("Затраченное время:")
-print(k6[2])
-print("Количество операций:")
-print(k6[1])
-print(f'Количество итераций: {k6[0]}')
+print('Diag_matrix:')
+Lambda = Matrix(n)
+Lambda.get_diag_matrix()
+Lambda.display()
+print('=============================')
+C = Matrix(n)
+C.get_matrix()
+A = Matrix(n)
+C_1 = Matrix(n)
+C_1 = C.Obr_matrix()
+A_1 = copy.deepcopy(A)
+A.multi(C_1, Lambda)
+A_1.multi(A, C)
+print('Y_0:')
+y_0 = Vector(n)
+y_0.get_vector()
+y_0.display()
+print('=============================')
+z_0 = copy.deepcopy(y_0)
+y_0.norma()
+z_0.multi_const(1/y_0.norm)
+print(deg_method(A_1, z_0, y_0))
+
+
+
+
+
+
+
+
+
+# X = Vector(10)
+# X.vector = [0.5, 0.5, 1.5, -1, -0.5, 1.5, 0.5, -0.5, 1.5, -1.5]
+# print("==================================================================================")
+# print("Полный метод Ньютона")
+# k1 = Newton(X)
+# print("Решение:")
+# k1[3].display()
+# print("Затраченное время:")
+# print(k1[2])
+# print("Количество операций:")
+# print(k1[1])
+# print(f'Количество итераций: {k1[0]}')
+# print("==================================================================================")
+# print("Модифицированный метод Ньютона")
+# k2 = Modified_Newton(X)
+# print("Решение:")
+# k2[3].display()
+# print("Затраченное время:")
+# print(k2[2])
+# print("Количество операций:")
+# print(k2[1])
+# print(f'Количество итераций: {k2[0]}')
+# print("==================================================================================")
+# print("Автоматический метод Ньютона (пользователь)")
+# if (k1[0] <= n):
+#     print("Полный метод Ньютона из первого пункта!")
+# else:
+#     k3 = Auto_Newton(X)
+#     print("Решение:")
+#     k3[3].display()
+#     print("Затраченное время:")
+#     print(k3[2])
+#     print("Количество операций:")
+#     print(k3[1])
+#     print(f'Количество итераций: {k3[0]}')
+# print("==================================================================================")
+# print("Автоматический метод Ньютона")
+# k4 = Auto_Newton_vol_2(X)
+# print("Решение:")
+# k4[3].display()
+# print("Затраченное время:")
+# print(k4[2])
+# print("Количество операций:")
+# print(k4[1])
+# print(f'Количество итераций: {k4[0]}')
+# print("==================================================================================")
+# print("Гибридный метод Ньютона (пользователь)")
+# k5 = Hybrid_Newton(X)
+# print("Решение:")
+# k5[3].display()
+# print("Затраченное время:")
+# print(k5[2])
+# print("Количество операций:")
+# print(k5[1])
+# print(f'Количество итераций: {k5[0]}')
+# print("==================================================================================")
+# print("Метод Ньютона для скалярного уравнения")
+# k6 = scal_Newton(1.1)
+# print("Решение:")
+# print(k6[3])
+# print("Затраченное время:")
+# print(k6[2])
+# print("Количество операций:")
+# print(k6[1])
+# print(f'Количество итераций: {k6[0]}')
 
 
 
