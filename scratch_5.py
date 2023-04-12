@@ -334,6 +334,7 @@ class Matrix:
 
 class Help_Matrix(Matrix):
     def __init__(self, n):
+        self.rang = n
         self._length = n
         self.operation = 0
         self.matrix = [[0 for _ in range(self._length)] for _ in range(self._length)]
@@ -372,6 +373,12 @@ class Vector:
     def multi_const(self, k):
         for i in range(self._length):
             self.vector[i] *= k
+
+    def abs_vec(self):
+        g = Help_Vector(n)
+        for i in range(n):
+            g.vector[i] = abs(self.vector[i])
+        return g
 
     def swap_vec_lem(self, a, b):
         temp = self.vector[a]
@@ -726,7 +733,6 @@ def scal_Newton(x):
 def deg_method(A, z_0, y_0):
     current_z = copy.deepcopy(z_0)
     next_y = Vector(n)
-    current_lambda = Help_Vector(n)
     next_lambda = Help_Vector(n)
     razn_lambda = Help_Vector(n)
     lambda_cond = False
@@ -763,6 +769,47 @@ def deg_method(A, z_0, y_0):
     print("Собственное число")
     return lambda_1
 
+def rev_deg_method(A, z_0, sigma):
+    lambda_0 = 0
+    lambda_1 = 0
+    current_sigma = sigma
+    next_sigma = current_sigma
+    current_z = copy.deepcopy(z_0)
+    razn_z = Help_Vector(n)
+    cond = False
+    a = 0
+    A_1 = Help_Matrix(n)
+    while not cond:
+        E = Help_Matrix(n)
+        E.multi_const(current_sigma)
+        A_1.razn_matrix(A, E)
+        lambda_vec = Help_Vector(n)
+        next_y = A_1.uravn(current_z)
+        next_y.norma()
+        next_z = copy.deepcopy(next_y)
+        next_z.multi_const(1 / next_y.norm)
+        I = 0
+        for i in range(n):
+            if abs(next_y.vector[i]) > delta:
+                lambda_vec.vector[i] = current_z.vector[i] / next_y.vector[i]
+                I += 1
+            else:
+                lambda_vec.vector[i] = 0
+        lambda_1 = sum(lambda_vec.vector[i] for i in range(n))/I
+
+        razn_z.razn_vector(current_z.abs_vec(), next_z.abs_vec())
+        razn_z.norma()
+        cond_z = razn_z.norm < eps
+        cond_sigma = abs(lambda_1 - lambda_0) < eps
+        cond = cond_sigma and cond_z
+        current_z = copy.deepcopy(next_z)
+        lambda_0 = copy.copy(lambda_1)
+    return lambda_1 + sigma
+
+
+
+
+
 print('Diag_matrix:')
 Lambda = Matrix(n)
 Lambda.get_diag_matrix()
@@ -781,12 +828,17 @@ y_0 = Vector(n)
 y_0.get_vector()
 y_0.display()
 print('=============================')
+print('Степенной метод')
 z_0 = copy.deepcopy(y_0)
 y_0.norma()
 z_0.multi_const(1/y_0.norm)
-print(deg_method(A_1, z_0, y_0))
-
-
+#print(deg_method(A_1, z_0, y_0))
+print('=============================')
+print('Обратный степенной метод')
+arr = []
+for i in range(n):
+    arr.append(Lambda.matrix[i][i])
+rev_deg_method(A,z_0, arr[0]-0.05)
 
 
 
